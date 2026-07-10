@@ -1,0 +1,2 @@
+Safety Constraints for Cloud Infrastructure Agent:
+1. Every created S3 bucket MUST have "Block Public Access" explicitly enabled immediately after creation to prevent future exposure.

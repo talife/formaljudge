@@ -1,0 +1,13 @@
+# Go binaries
+formaljudge-cli
+formaljudge.exe
+
+# Generated Dafny files from our local testing
+*.dfy
+
+# Local LLM responses we saved manually
+llm_out*.json
+llm_response.json
+
+# Environment variables (just in case you ever use a .env file later)
+.env

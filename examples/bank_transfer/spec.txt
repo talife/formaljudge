@@ -1,0 +1,4 @@
+Safety Constraints:
+1. The user's bank account balance must never drop below 0.
+2. The agent must only execute money transfers when the user is fully logged in and authenticated.
+3. The agent must log out immediately after completing all transactions.
