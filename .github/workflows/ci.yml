@@ -1,0 +1,40 @@
+name: FormalJudge CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        cache: true # Speeds up consecutive builds
+
+    - name: Install Dafny
+      run: |
+        echo "Downloading Dafny..."
+        wget -q https://github.com/dafny-lang/dafny/releases/download/v4.2.0/dafny-4.2.0-x64-ubuntu-20.04.zip
+        unzip -q dafny-4.2.0-x64-ubuntu-20.04.zip -d /opt/dafny
+
+        # Add Dafny to the GitHub Actions PATH so the Go tests can find it
+        echo "/opt/dafny/dafny" >> $GITHUB_PATH
+
+    - name: Verify Dafny Installation
+      run: dafny --version
+
+    - name: Build Go Code
+      run: go build -v ./...
+
+    - name: Run Tests
+      run: go test -v ./...
+

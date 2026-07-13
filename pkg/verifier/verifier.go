@@ -28,57 +28,59 @@ func NewDafnyVerifier(dafnyPath string) *DafnyVerifier {
 
 // Verify runs the formal verification on the generated .dfy file.
 func (v *DafnyVerifier) Verify(ctx context.Context, dfyFilePath string) (*models.Verdict, error) {
-	// We set a timeout for the SMT solver to prevent hangs
+	// 1. System Execution: Set a timeout for the SMT solver to prevent hangs
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	// Modern Dafny uses 'verify', older versions can just compile without generating code
-	// We'll run 'dafny verify <file>' which is standard for Dafny 4+
+	// 2. Run 'dafny verify <file>'
 	cmd := exec.CommandContext(ctx, v.DafnyPath, "verify", dfyFilePath)
-
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-
 	err := cmd.Run()
+
 	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
 
-	verdict := &models.Verdict{
-		GeneratedDafnyFile: dfyFilePath,
-		DafnyOutput:        stdoutStr + "\n" + stderrStr,
-	}
-
-	// If the binary is missing or doesn't execute at all
+	// 3. Catch critical OS errors (e.g., Dafny binary not found)
 	if err != nil && stdoutStr == "" && stderrStr == "" {
-		verdict.Status = models.VerdictError
-		verdict.Message = fmt.Sprintf("failed to execute dafny binary: %v", err)
+		verdict := &models.Verdict{
+			Status:             models.VerdictError,
+			Message:            fmt.Sprintf("failed to execute dafny binary: %v", err),
+			GeneratedDafnyFile: dfyFilePath,
+		}
 		return verdict, nil
 	}
 
-	// Analyze outputs
-	// Dafny outputs typically look like:
-	// "Dafny program verifier finished with 0 verified, 0 errors" (or "1 verified, 0 errors")
-	// If there are errors, it states: "finished with X verified, Y errors" or shows assertion violations.
+	// 4. Delegate the complex text parsing to the helper function
+	verdict := v.AnalyzeOutput(stdoutStr, stderrStr)
+	verdict.GeneratedDafnyFile = dfyFilePath
+
+	return verdict, nil
+}
+
+// AnalyzeOutput parses the standard output and standard error from Dafny to determine the verdict.
+func (v *DafnyVerifier) AnalyzeOutput(stdoutStr, stderrStr string) *models.Verdict {
+	verdict := &models.Verdict{
+		DafnyOutput: stdoutStr + "\n" + stderrStr,
+	}
 	combinedOutput := stdoutStr + " " + stderrStr
 
 	// Check if Dafny even managed to compile and reach the verification summary
 	if !strings.Contains(combinedOutput, "verified") {
-		// If it doesn't contain "verified", it means compilation/syntax failed
 		verdict.Status = models.VerdictError
 		verdict.Message = "Formal specification compilation failed:\n" + combinedOutput
-		return verdict, nil
+		return verdict
 	}
 
-	// Check for verification errors (SMT solver failures)
-	// We search for patterns like "0 errors", "0 verification errors" or "verified, 0 errors"
+	// Check for verification successes
 	if strings.Contains(combinedOutput, "0 errors") || strings.Contains(combinedOutput, "0 verification errors") {
 		verdict.Status = models.VerdictSafe
 		verdict.Message = "Formal verification succeeded. All safety invariants are satisfied mathematically."
-		return verdict, nil
+		return verdict
 	}
 
-	// If we got here and there are errors/assertions that failed:
+	// If we got here, an assertion failed
 	verdict.Status = models.VerdictUnsafe
 	verdict.Message = "Safety invariant violation detected. The agent trace is unsafe."
 
@@ -90,6 +92,5 @@ func (v *DafnyVerifier) Verify(ctx context.Context, dfyFilePath string) (*models
 			break
 		}
 	}
-
-	return verdict, nil
+	return verdict
 }
