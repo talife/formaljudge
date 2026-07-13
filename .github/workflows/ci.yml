@@ -20,9 +20,8 @@ jobs:
         go-version: '1.26'
         cache: true
 
-    # NEW: Run golangci-lint
     - name: golangci-lint
-      uses: golangci/golangci-lint-action@v6
+      uses: golangci/golangci-lint-action@v9
       with:
         version: latest
 
