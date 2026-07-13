@@ -21,7 +21,21 @@ import (
 var (
 	serverPubKey  ed25519.PublicKey
 	serverPrivKey ed25519.PrivateKey
+
+	policyRegistry = make(map[string]string)
 )
+
+type PolicyRequest struct {
+	PolicyID     string          `json:"policy_id"`
+	CompiledMath json.RawMessage `json:"compiled_math"`
+}
+
+type VerifyRequest struct {
+	Spec            string          `json:"spec"`
+	Trace           *models.Trace   `json:"trace"`
+	LlmMockResponse json.RawMessage `json:"llm_mock_response,omitempty"`
+	PolicyID        string          `json:"policy_id,omitempty"`
+}
 
 func init() {
 	// Generate ephemeral Ed25519 keys for the POC on startup
@@ -34,16 +48,10 @@ func init() {
 	log.Printf("🔐 Cryptographic Module Initialized. Public Key: %s", hex.EncodeToString(serverPubKey))
 }
 
-// VerifyRequest represents the expected JSON payload from the AI Agent Orchestrator.
-type VerifyRequest struct {
-	Spec            string          `json:"spec"`
-	Trace           *models.Trace   `json:"trace"`
-	LlmMockResponse json.RawMessage `json:"llm_mock_response,omitempty"`
-}
-
 func main() {
 	// Setup the HTTP route
 	http.HandleFunc("/v1/verify", verifyHandler)
+	http.HandleFunc("/v1/policies", policyHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -77,8 +85,15 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Spec == "" || req.Trace == nil {
-		http.Error(w, "Missing 'spec' or 'trace' in payload", http.StatusBadRequest)
+	// Require a trace
+	if req.Trace == nil {
+		http.Error(w, "Missing 'trace' in payload", http.StatusBadRequest)
+		return
+	}
+
+	// Require EITHER a dynamic Spec OR a pre-compiled PolicyID
+	if req.Spec == "" && req.PolicyID == "" {
+		http.Error(w, "Must provide either 'spec' or 'policy_id' in payload", http.StatusBadRequest)
 		return
 	}
 
@@ -93,9 +108,19 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Compile the Trace and Spec
 	mockStr := ""
-	if len(req.LlmMockResponse) > 0 {
+	if req.PolicyID != "" {
+		// AOT PATH: Use pre-compiled math from the registry
+		registeredMath, exists := policyRegistry[req.PolicyID]
+		if !exists {
+			http.Error(w, fmt.Sprintf("Policy ID '%s' not found", req.PolicyID), http.StatusNotFound)
+			return
+		}
+		mockStr = registeredMath
+	} else if len(req.LlmMockResponse) > 0 {
+		// FALLBACK PATH: Use the mock response provided in the request
 		mockStr = string(req.LlmMockResponse)
 	}
+
 	// Note: In a production environment, you might fetch the API key from a secure vault or env var.
 	comp := compiler.NewDafnyCompiler(os.Getenv("GEMINI_API_KEY"))
 	_, err = comp.Compile(context.Background(), req.Spec, req.Trace, tmpFile.Name(), mockStr)
@@ -146,5 +171,33 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	// Check the error on the JSON encoder (fixes errcheck)
 	if err := json.NewEncoder(w).Encode(verdict); err != nil {
 		log.Printf("Failed to encode JSON response: %v", err)
+	}
+}
+
+// policyHandler allows security engineers to pre-compile and register policies
+func policyHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req PolicyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid JSON payload: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.PolicyID == "" || len(req.CompiledMath) == 0 {
+		http.Error(w, "Missing 'policy_id' or 'compiled_math'", http.StatusBadRequest)
+		return
+	}
+
+	// Save it to our registry
+	policyRegistry[req.PolicyID] = string(req.CompiledMath)
+	log.Printf("🛡️ Policy Registered: %s", req.PolicyID)
+
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte(`{"status": "success", "message": "Policy registered successfully"}`)); err != nil {
+		log.Printf("Failed to write response: %v", err)
 	}
 }
