@@ -148,7 +148,7 @@ Output ONLY a JSON object with the following exact string fields:
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	err = os.WriteFile(outputPath, buf.Bytes(), 0644)
+	err = os.WriteFile(outputPath, buf.Bytes(), 0600)
 	if err != nil {
 		return "", fmt.Errorf("failed to write generated dafny file to %s: %w", outputPath, err)
 	}

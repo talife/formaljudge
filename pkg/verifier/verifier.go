@@ -33,6 +33,7 @@ func (v *DafnyVerifier) Verify(ctx context.Context, dfyFilePath string) (*models
 	defer cancel()
 
 	// 2. Run 'dafny verify <file>'
+	//nolint:gosec // G204: The Dafny binary path and file path are intentionally provided by the user via CLI flags.
 	cmd := exec.CommandContext(ctx, v.DafnyPath, "verify", dfyFilePath)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
