@@ -25,3 +25,6 @@ graph TD
     E -->|Proof Succeeds| F((SAFE))
     E -->|Math Evaluates to False| G((UNSAFE))
 
+## 📖 Acknowledgments & References
+This proof-of-concept is inspired by the research presented in:
+* FormalJudge: A Neuro-Symbolic Paradigm for Agentic Oversight (Zhou et al.)

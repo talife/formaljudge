@@ -13,6 +13,11 @@ import (
 )
 
 func main() {
+	const colorReset = "\033[0m"
+	const colorRed = "\033[31m"
+	const colorGreen = "\033[32m"
+	const colorYellow = "\033[33m"
+
 	tracePath := flag.String("trace", "", "Path to the agent execution trace JSON file")
 	specPath := flag.String("spec", "", "Path to the natural language safety specification file")
 	outputPath := flag.String("output", "verification.dfy", "Path to save the generated Dafny file")
@@ -73,7 +78,13 @@ func main() {
 		fmt.Println(string(jsonBytes))
 	} else {
 		fmt.Println("\n==================== VERDICT ====================")
-		fmt.Printf("STATUS: %s\n", verdict.Status)
+		if verdict.Status == models.VerdictSafe {
+			fmt.Printf("STATUS: %s%s%s\n", colorGreen, verdict.Status, colorReset)
+		} else if verdict.Status == models.VerdictUnsafe {
+			fmt.Printf("STATUS: %s%s%s\n", colorRed, verdict.Status, colorReset)
+		} else {
+			fmt.Printf("STATUS: %s%s%s\n", colorYellow, verdict.Status, colorReset)
+		}
 		fmt.Printf("MESSAGE: %s\n", verdict.Message)
 		if verdict.FailedInvariant != "" {
 			fmt.Printf("FAILED INVARIANT: %s\n", verdict.FailedInvariant)
