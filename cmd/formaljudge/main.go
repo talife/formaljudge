@@ -90,11 +90,12 @@ func main() {
 		fmt.Println(string(jsonBytes))
 	} else {
 		fmt.Println("\n==================== VERDICT ====================")
-		if verdict.Status == models.VerdictSafe {
+		switch verdict.Status {
+		case models.VerdictSafe:
 			fmt.Printf("STATUS: %s%s%s\n", colorGreen, verdict.Status, colorReset)
-		} else if verdict.Status == models.VerdictUnsafe {
+		case models.VerdictUnsafe:
 			fmt.Printf("STATUS: %s%s%s\n", colorRed, verdict.Status, colorReset)
-		} else {
+		default:
 			fmt.Printf("STATUS: %s%s%s\n", colorYellow, verdict.Status, colorReset)
 		}
 		fmt.Printf("MESSAGE: %s\n", verdict.Message)
@@ -103,10 +104,10 @@ func main() {
 		}
 		fmt.Println("=================================================")
 	}
-
-	if verdict.Status == models.VerdictUnsafe {
+	switch verdict.Status {
+	case models.VerdictUnsafe:
 		os.Exit(2)
-	} else if verdict.Status == models.VerdictError {
+	case models.VerdictError:
 		os.Exit(3)
 	}
 }

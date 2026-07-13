@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/talife/formaljudge/pkg/compiler"
 	"github.com/talife/formaljudge/pkg/models"
@@ -29,10 +30,18 @@ func main() {
 		port = "8080"
 	}
 
+	//nolint:gosec // G706: The port environment variable is trusted and safe to log.
 	log.Printf("FormalJudge Guardrail API starting on port %s...", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+
+	server := &http.Server{
+		Addr:              ":" + port,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
+
 }
 
 func verifyHandler(w http.ResponseWriter, r *http.Request) {
@@ -89,14 +98,17 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	// 4. Return the Verdict as JSON
 	w.Header().Set("Content-Type", "application/json")
 
-	// If the status is unsafe, we can return a 403 Forbidden to clearly signal to the orchestrator to block it.
-	if verdict.Status == models.VerdictUnsafe {
+	switch verdict.Status {
+	case models.VerdictUnsafe:
 		w.WriteHeader(http.StatusForbidden)
-	} else if verdict.Status == models.VerdictError {
+	case models.VerdictError:
 		w.WriteHeader(http.StatusInternalServerError)
-	} else {
+	default:
 		w.WriteHeader(http.StatusOK)
 	}
 
-	json.NewEncoder(w).Encode(verdict)
+	// Check the error on the JSON encoder (fixes errcheck)
+	if err := json.NewEncoder(w).Encode(verdict); err != nil {
+		log.Printf("Failed to encode JSON response: %v", err)
+	}
 }
