@@ -1,34 +1,36 @@
+version: "2"
 run:
-  timeout: 5m
   tests: true
-
 linters:
-  disable-all: true
+  default: none
   enable:
-    # ==========================
-    # 🔒 SECURITY & RELIABILITY
-    # ==========================
-    - gosec       # Inspects source code for security problems (hardcoded creds, unsafe pointers, SQL injection, etc.)
-    - errcheck    # Ensures all errors returned by functions are handled (prevents silent failures/panics)
-    - bodyclose   # Checks whether HTTP response bodies are closed successfully (prevents resource leaks/DoS)
-
-    # ==========================
-    # 🐛 BUG DETECTION
-    # ==========================
-    - govet       # Official Go tool for finding suspicious code constructs
-    - staticcheck # A massive, advanced drop-in replacement for go vet
-    - ineffassign # Detects useless assignments (often hides logical bugs)
-    - typecheck   # Standard Go type checking
-
-    # ==========================
-    # 🧹 CODE QUALITY & STYLE
-    # ==========================
-    - gosimple    # Specializes in simplifying Go code
-    - misspell    # Finds commonly misspelled English words in comments and strings
-    - whitespace  # Checks for trailing whitespace and bad formatting
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
+    - bodyclose
+    - errcheck
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - gosec
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
