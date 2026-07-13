@@ -23,7 +23,9 @@ func TestEndToEndVerification(t *testing.T) {
 	}`
 	llmFile, _ := os.CreateTemp("", "llm_safe_*.json")
 	defer os.Remove(llmFile.Name())
-	llmFile.Write([]byte(safeLLMJSON))
+	if _, err := llmFile.Write([]byte(safeLLMJSON)); err != nil {
+		t.Fatalf("Failed to write to temp file: %v", err)
+	}
 
 	dfyFile := "e2e_test.dfy"
 	defer os.Remove(dfyFile)

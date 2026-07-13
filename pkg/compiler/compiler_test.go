@@ -20,7 +20,9 @@ func TestCompilerWithMockLLMResponse(t *testing.T) {
 	}`
 	tmpFile, _ := os.CreateTemp("", "mock_llm_*.json")
 	defer os.Remove(tmpFile.Name())
-	tmpFile.Write([]byte(mockJSON))
+	if _, err := tmpFile.Write([]byte(mockJSON)); err != nil {
+		t.Fatalf("Failed to write to temp file: %v", err)
+	}
 
 	// 2. Run Compiler
 	comp := NewDafnyCompiler("") // No API key needed
