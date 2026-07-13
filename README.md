@@ -24,6 +24,7 @@ graph TD
     D --> E{Dafny Verifier<br>SMT Solver}
     E -->|Proof Succeeds| F((SAFE))
     E -->|Math Evaluates to False| G((UNSAFE))
+```
 
 ## 📖 Acknowledgments & References
 This proof-of-concept is inspired by the research presented in:
