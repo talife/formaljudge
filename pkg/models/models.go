@@ -3,8 +3,8 @@ package models
 // TraceStep represents a single interaction or step in the agent execution trace.
 type TraceStep struct {
 	StepNumber  int    `json:"step_number"`
-	Role        string `json:"role"`         // e.g., "thought", "action", "observation", "system"
-	Description string `json:"description"`  // Natural language content of the step
+	Role        string `json:"role"`        // e.g., "thought", "action", "observation", "system"
+	Description string `json:"description"` // Natural language content of the step
 }
 
 // Trace represents the full sequence of actions taken by the agent.
@@ -30,4 +30,6 @@ type Verdict struct {
 	FailedInvariant    string      `json:"failed_invariant,omitempty"`
 	DafnyOutput        string      `json:"dafny_output,omitempty"`
 	GeneratedDafnyFile string      `json:"generated_dafny_file,omitempty"`
+	ReceiptSignature   string      `json:"receipt_signature,omitempty"`
+	ReceiptPublicKey   string      `json:"receipt_public_key,omitempty"`
 }

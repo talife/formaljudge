@@ -1,12 +1,10 @@
 import json
 from formaljudge.client import FormalJudgeClient
 
-# 1. Initialize your Guardrail
 guardrail = FormalJudgeClient()
-
 company_policy = "Every created S3 bucket MUST have Block Public Access explicitly enabled."
 
-# 2. Simulate the Agent's state (it decided to create a bucket but forgot public access)
+# 1. The Agent executes a single, atomic secure deployment
 agent_trace = {
   "agent_id": "terraform_agent",
   "initial_state": {
@@ -15,21 +13,22 @@ agent_trace = {
     "block_public_access_enabled": "false"
   },
   "steps": [
-    {"step_number": 1, "role": "action", "description": "Executed: CreateBucket(name='app-logs-bucket')"}
+    {"step_number": 1, "role": "action", "description": "DeploySecureBucket(name='app-logs-bucket')"}
   ]
 }
 
-# (For local testing without an API key, load the mock we created earlier)
-with open("../../examples/terraform_s3/llm_out_tf_naive.json", "r") as f:
-    mock_math = json.load(f)
+# 2. Mock math representing the atomic action
+mock_math = {
+    "state_definition": "datatype State = State(block_public_access_enabled: bool, bucket_exists: bool, cloud_provider: string)",
+    "actions_definition": "datatype Action = DeploySecureBucket(name: string)",
+    "transition_definition": "function next(s: State, a: Action): State {\n  match a {\n    case DeploySecureBucket(name) => s.(bucket_exists := true, block_public_access_enabled := true)\n  }\n}",
+    "safety_invariant": "predicate SafetyInvariant(s: State) {\n  s.bucket_exists ==> s.block_public_access_enabled\n}",
+    "concrete_trace": "[DeploySecureBucket(\"app-logs-bucket\")]",
+    "initial_state_value": "State(false, false, \"AWS\")"
+}
 
-# 3. Intercept the execution!
 print("Agent is attempting to execute tools...")
 is_safe = guardrail.verify_trace(company_policy, agent_trace, mock_llm_response=mock_math)
 
 if is_safe:
-    print("Executing Tool...")
-    # Actually run the terraform command
-else:
-    print("Execution halted. Returning error to LLM so it can fix its mistake.")
-    # Return an error to the agent, prompting it to try again and turn on block_public_access!
+    print("Execution complete. Audit trail saved.")

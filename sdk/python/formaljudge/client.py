@@ -32,6 +32,12 @@ class FormalJudgeClient:
                 # HTTP 200 OK means it's SAFE
                 result = json.loads(response.read().decode('utf-8'))
                 print(f"✅ FormalJudge Approved: {result.get('message')}")
+
+                if "receipt_signature" in result:
+                    print(f"🔐 Cryptographic Receipt Generated!")
+                    print(f"   Public Key: {result.get('receipt_public_key')}")
+                    print(f"   Signature:  {result.get('receipt_signature')[:64]}...")
+
                 return True
 
         except urllib.error.HTTPError as e:

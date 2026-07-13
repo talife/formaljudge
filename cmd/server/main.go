@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +17,22 @@ import (
 	"github.com/talife/formaljudge/pkg/models"
 	"github.com/talife/formaljudge/pkg/verifier"
 )
+
+var (
+	serverPubKey  ed25519.PublicKey
+	serverPrivKey ed25519.PrivateKey
+)
+
+func init() {
+	// Generate ephemeral Ed25519 keys for the POC on startup
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		log.Fatalf("Failed to generate ed25519 keys: %v", err)
+	}
+	serverPubKey = pub
+	serverPrivKey = priv
+	log.Printf("🔐 Cryptographic Module Initialized. Public Key: %s", hex.EncodeToString(serverPubKey))
+}
 
 // VerifyRequest represents the expected JSON payload from the AI Agent Orchestrator.
 type VerifyRequest struct {
@@ -92,6 +112,23 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Verifier runner error: %v", err)
 		http.Error(w, "Verification engine failure", http.StatusInternalServerError)
 		return
+	}
+	if verdict.Status == models.VerdictSafe {
+		// 1. Serialize the trace to hash it
+		traceBytes, _ := json.Marshal(req.Trace)
+
+		// 2. Create the exact payload string: Spec + Trace + Dafny Math
+		payload := fmt.Sprintf("%s|%s|%s", req.Spec, string(traceBytes), verdict.DafnyOutput)
+
+		// 3. Hash the payload with SHA-256
+		hash := sha256.Sum256([]byte(payload))
+
+		// 4. Sign the hash with our private key
+		signature := ed25519.Sign(serverPrivKey, hash[:])
+
+		// 5. Attach the hex-encoded strings to the response
+		verdict.ReceiptSignature = hex.EncodeToString(signature)
+		verdict.ReceiptPublicKey = hex.EncodeToString(serverPubKey)
 	}
 
 	// 4. Return the Verdict as JSON
