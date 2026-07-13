@@ -54,7 +54,19 @@ func main() {
 	fmt.Println("[*] Compiling specification and abstracting trace...")
 	comp := compiler.NewDafnyCompiler(os.Getenv("GEMINI_API_KEY"))
 
-	dfyFile, err := comp.Compile(context.Background(), string(specData), &trace, *outputPath, *llmResponse)
+	// NEW BLOCK: Check if the user passed a mock file path, and read its contents
+	var mockResp string
+	if *llmResponse != "" {
+		data, err := os.ReadFile(*llmResponse)
+		if err != nil {
+			fail(fmt.Sprintf("Failed to read LLM response file: %v", err), *jsonOutput)
+		}
+		mockResp = string(data) // Convert the file bytes into a raw JSON string
+	}
+
+	// Update the Compile call to use 'mockResp' (the file contents) instead of '*llmResponse' (the file path)
+	dfyFile, err := comp.Compile(context.Background(), string(specData), &trace, *outputPath, mockResp)
+
 	if err != nil {
 		if err.Error() == "PROMPT_PRINTED" {
 			fmt.Println("\n[!] Please copy the prompt above, provide it to your LLM, save the JSON response to a file (e.g., llm_out.json), and rerun with '-llm-response llm_out.json'")

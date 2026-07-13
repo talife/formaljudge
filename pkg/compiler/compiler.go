@@ -64,7 +64,7 @@ method Main() {
 `
 
 // Compile generates a full Dafny source file based on natural language specifications and trace logs using Gemini or a local JSON file.
-func (c *DafnyCompiler) Compile(ctx context.Context, spec string, trace *models.Trace, outputPath string, llmResponseFile string) (string, error) {
+func (c *DafnyCompiler) Compile(ctx context.Context, spec string, trace *models.Trace, outputPath string, llmMockResponse string) (string, error) {
 	traceJSON, _ := json.MarshalIndent(trace, "", "  ")
 
 	prompt := fmt.Sprintf(`You are a Formal Methods Expert and Dafny Compiler.
@@ -89,14 +89,9 @@ Output ONLY a JSON object with the following exact string fields:
 `, spec, string(traceJSON))
 
 	var respText string
-
-	if llmResponseFile != "" {
-		// Read from the file you provided manually
-		data, err := os.ReadFile(llmResponseFile)
-		if err != nil {
-			return "", fmt.Errorf("failed to read llm response file: %w", err)
-		}
-		respText = string(data)
+	if llmMockResponse != "" {
+		// Use the mock response directly provided via the API
+		respText = llmMockResponse
 	} else if c.ApiKey == "" {
 		// No API key and no file: Print the prompt for the user
 		fmt.Println("\n================== PROMPT FOR LLM ==================")
