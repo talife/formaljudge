@@ -41,7 +41,6 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
-
 }
 
 func verifyHandler(w http.ResponseWriter, r *http.Request) {
