@@ -1,6 +1,6 @@
 module github.com/talife/formaljudge
 
-go 1.21
+go 1.26
 
 require (
 	github.com/google/generative-ai-go v0.20.1
