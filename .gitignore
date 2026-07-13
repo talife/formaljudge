@@ -11,3 +11,9 @@ llm_response.json
 
 # Environment variables (just in case you ever use a .env file later)
 .env
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
