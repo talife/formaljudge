@@ -12,6 +12,13 @@ demo-tf:
 	@echo "Running Terraform Security Demo (LLM Bypassed)..."
 	@go run ./cmd/formaljudge -trace examples/terraform_s3/trace.json -spec examples/terraform_s3/spec.txt -llm-response llm_out_tf_naive.json -output tf_naive_verification.dfy
 
+lint:
+	@echo "Running golangci-lint..."
+	golangci-lint run ./...
+
+test: lint
+	go test -v ./...
+
 clean:
 	@rm -rf bin/
 	@rm -f *.dfy

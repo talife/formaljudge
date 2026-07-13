@@ -21,11 +21,6 @@ func TestEndToEndVerification(t *testing.T) {
 		"concrete_trace": "[]",
 		"initial_state_value": "State(100)"
 	}`
-	llmFile, _ := os.CreateTemp("", "llm_safe_*.json")
-	defer os.Remove(llmFile.Name())
-	if _, err := llmFile.Write([]byte(safeLLMJSON)); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
 
 	dfyFile := "e2e_test.dfy"
 	defer os.Remove(dfyFile)
@@ -33,7 +28,9 @@ func TestEndToEndVerification(t *testing.T) {
 	// 2. Compile
 	comp := compiler.NewDafnyCompiler("")
 	trace := &models.Trace{AgentID: "test"}
-	_, err := comp.Compile(context.Background(), "Spec", trace, dfyFile, llmFile.Name())
+
+	// Pass the safeLLMJSON string directly!
+	_, err := comp.Compile(context.Background(), "Spec", trace, dfyFile, safeLLMJSON)
 	if err != nil {
 		t.Fatalf("Compiler failed: %v", err)
 	}
