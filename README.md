@@ -1,3 +1,7 @@
+[![CI Pipeline](https://github.com/talife/formaljudge/actions/workflows/ci.yml/badge.svg)](https://github.com/talife/formaljudge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/talife/formaljudge)](https://go.dev/)
+
 # ⚖️ FormalJudge: Agentic Security & Formal Verification Guardrail
 
 FormalJudge is a proof-of-concept **Agentic Security Middleware** built in Go. It enforces strict, mathematically proven safety guardrails on autonomous AI agents using a **Neuro-Symbolic architecture**.
