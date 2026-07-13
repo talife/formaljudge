@@ -1,0 +1,37 @@
+name: Release FormalJudge
+
+on:
+  push:
+    # This triggers the workflow ONLY when you push a tag that starts with "v"
+    tags:
+      - 'v*'
+
+# We need permissions to let the Action create a release on your behalf
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # GoReleaser needs the full history to generate the changelog
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          # GitHub automatically provides this token to the action
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
