@@ -1,0 +1,8 @@
+{
+"state_definition": "datatype State = State(balance: int, authenticated: bool, error: bool)",
+"actions_definition": "datatype Action = Login | Transfer(amount: int) | Logout",
+"transition_definition": "function next(s: State, a: Action): State {\n  match a\n    case Login => s.(authenticated := true)\n    case Logout => s.(authenticated := false)\n    case Transfer(amount) => if s.authenticated then s.(balance := s.balance - amount) else s.(error := true)\n}",
+"safety_invariant": "predicate SafetyInvariant(s: State) {\n  s.balance >= 0 && !s.error\n}",
+"concrete_trace": "[Login, Transfer(80)]",
+"initial_state_value": "State(100, false, false)"
+}

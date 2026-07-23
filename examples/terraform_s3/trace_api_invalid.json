@@ -1,0 +1,17 @@
+{
+  "agent_id": "cli_automation_agent",
+  "initial_state": {
+    "cloud_provider": "AWS",
+    "bucket_exists": "false",
+    "block_public_access_enabled": "false"
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "role": "action",
+      "tool_name": "bash_execute",
+      "raw_code": "aws s3api create-bucket --bucket app-logs-bucket --region us-east-1",
+      "symbolic_mapping": "DeploySecureBucket(name='app-logs-bucket')"
+    }
+  ]
+}

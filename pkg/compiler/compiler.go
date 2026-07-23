@@ -84,8 +84,23 @@ Instructions:
 5. Provide the 'InitialStateValue' as a concrete Dafny state instantiation matching the JSON initial_state.
 6. Provide the 'ConcreteTrace' as a Dafny sequence (e.g. [Login, Transfer(50), Logout]) of Action instantiations matching the trace steps.
 
-Output ONLY a JSON object with the following exact string fields:
+Create a JSON object with the following exact string fields:
 "state_definition", "actions_definition", "transition_definition", "safety_invariant", "concrete_trace", "initial_state_value"
+
+Now drop that you have the json, drop the dafny analyzer constraint and endorse a pure serialization formatting cap with the next rules
+CRITICAL JSON ESCAPING RULE:
+Because the output is a JSON object where the values are strings of Dafny code, ANY double quotation marks inside the Dafny code MUST be escaped with a backslash (\").
+
+INCORRECT (Will cause a JSON parse error):
+"initial_state_value": "State(false, false, "AWS")"
+
+CORRECT (Valid JSON):
+"initial_state_value": "State(false, false, \"AWS\")"
+"concrete_trace": "[CreateBucket(\"app-logs-bucket\")]"
+
+Output ONLY the valid JSON object.
+Because I am using a web chat interface, output the valid JSON object wrapped inside a single markdown code block
+to prevent the browser from stripping escaped backslashes. Do not include any conversational text outside of this code block.
 `, spec, string(traceJSON))
 
 	var respText string

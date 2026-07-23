@@ -5,6 +5,10 @@ type TraceStep struct {
 	StepNumber  int    `json:"step_number"`
 	Role        string `json:"role"`        // e.g., "thought", "action", "observation", "system"
 	Description string `json:"description"` // Natural language content of the step
+
+	ToolName        string `json:"tool_name,omitempty"`
+	RawCode         string `json:"raw_code,omitempty"`
+	SymbolicMapping string `json:"symbolic_mapping,omitempty"`
 }
 
 // Trace represents the full sequence of actions taken by the agent.

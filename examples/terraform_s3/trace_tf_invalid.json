@@ -1,0 +1,17 @@
+{
+  "agent_id": "terraform_agent",
+  "initial_state": {
+    "cloud_provider": "AWS",
+    "bucket_exists": "false",
+    "block_public_access_enabled": "false"
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "role": "action",
+      "tool_name": "terraform_apply",
+      "raw_code": "resource \"aws_s3_bucket\" \"app_logs\" {\n  bucket = \"app-logs-bucket\"\n}",
+      "symbolic_mapping": "CreateBucket(name='app-logs-bucket')"
+    }
+  ]
+}
