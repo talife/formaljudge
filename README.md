@@ -71,11 +71,21 @@ FormalJudge runs as a stateless microservice featuring built-in Slowloris DoS pr
   "policy_id": "aws-s3-public-block",
   "trace": {
     "agent_id": "terraform_agent",
-    "initial_state": {"cloud_provider": "AWS", "bucket_exists": "false", "block_public_access_enabled": "false"},
+    "initial_state": {
+      "cloud_provider": "AWS",
+      "bucket_exists": "false",
+      "block_public_access_enabled": "false"
+    },
     "steps": [
-      {"step_number": 1, "role": "action", "description": "DeploySecureBucket(name='app-logs-bucket')"}
-    ]
-  }
+      {
+        "step_number": 1,
+        "role": "action",
+        "tool_name": "terraform_apply",
+        "raw_code": "resource \"aws_s3_bucket\" \"app_logs\" {\n  bucket = \"app-logs-bucket\"\n}\n\nresource \"aws_s3_bucket_public_access_block\" \"app_logs_security\" {\n  bucket = aws_s3_bucket.app_logs.id\n  block_public_acls       = true\n  block_public_policy     = true\n  ignore_public_acls      = true\n  restrict_public_buckets = true\n}",
+        "symbolic_mapping": "DeploySecureBucket(name='app-logs-bucket')"
+     }
+   ]
+ }
 }
 ```
 * **Response (HTTP 200 SAFE):**
