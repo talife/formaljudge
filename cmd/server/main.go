@@ -139,19 +139,25 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if verdict.Status == models.VerdictSafe {
-		// 1. Serialize the trace to hash it
+		// 1. Serialize the trace (automatically includes ToolName, RawCode, and SymbolicMapping!)
 		traceBytes, _ := json.Marshal(req.Trace)
 
-		// 2. Create the exact payload string: Spec + Trace + Dafny Math
-		payload := fmt.Sprintf("%s|%s|%s", req.Spec, string(traceBytes), verdict.DafnyOutput)
+		// 2. Identify which policy rule was evaluated (AOT Policy ID vs Dynamic Spec)
+		policyIdentifier := req.Spec
+		if policyIdentifier == "" {
+			policyIdentifier = "AOT_POLICY:" + req.PolicyID
+		}
 
-		// 3. Hash the payload with SHA-256
+		// 3. Create the exact payload string: Policy/Spec + Trace + Dafny Math
+		payload := fmt.Sprintf("%s|%s|%s", policyIdentifier, string(traceBytes), verdict.DafnyOutput)
+
+		// 4. Hash the payload with SHA-256
 		hash := sha256.Sum256([]byte(payload))
 
-		// 4. Sign the hash with our private key
+		// 5. Sign the hash with our private key
 		signature := ed25519.Sign(serverPrivKey, hash[:])
 
-		// 5. Attach the hex-encoded strings to the response
+		// 6. Attach the hex-encoded strings to the response
 		verdict.ReceiptSignature = hex.EncodeToString(signature)
 		verdict.ReceiptPublicKey = hex.EncodeToString(serverPubKey)
 	}
