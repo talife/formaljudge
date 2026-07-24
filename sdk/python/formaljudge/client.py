@@ -1,53 +1,57 @@
 import json
 import urllib.request
 import urllib.error
+from typing import Dict, Any, Optional, List
 
 class FormalJudgeClient:
-    def __init__(self, endpoint_url="http://localhost:8080/v1/verify"):
+    def __init__(self, endpoint_url: str = "http://localhost:8080/v1/verify"):
         self.endpoint_url = endpoint_url
 
-    def verify_trace(self, spec: str, trace_dict: dict, mock_llm_response: dict = None) -> bool:
+    def verify_trace(
+        self,
+        trace_dict: Dict[str, Any],
+        policy_id: Optional[str] = None,
+        spec: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Sends the agent's current trace to the FormalJudge Go API.
-        Returns True if SAFE, False if UNSAFE.
+        Sends an agent execution trace to the FormalJudge Go daemon for SMT verification.
+        Supports both AOT policy_id and dynamic natural language specs.
         """
+        if not policy_id and not spec:
+            raise ValueError("Must provide either 'policy_id' (for AOT) or 'spec' (for dynamic verification).")
+
         payload = {
-            "spec": spec,
             "trace": trace_dict
         }
+        if policy_id:
+            payload["policy_id"] = policy_id
+        if spec:
+            payload["spec"] = spec
 
-        if mock_llm_response:
-            payload["llm_mock_response"] = mock_llm_response
-
-        data = json.dumps(payload).encode('utf-8')
         req = urllib.request.Request(
             self.endpoint_url,
-            data=data,
+            data=json.dumps(payload).encode('utf-8'),
             headers={'Content-Type': 'application/json'},
             method='POST'
         )
 
         try:
             with urllib.request.urlopen(req) as response:
-                # HTTP 200 OK means it's SAFE
-                result = json.loads(response.read().decode('utf-8'))
-                print(f"✅ FormalJudge Approved: {result.get('message')}")
-
-                if "receipt_signature" in result:
-                    print(f"🔐 Cryptographic Receipt Generated!")
-                    print(f"   Public Key: {result.get('receipt_public_key')}")
-                    print(f"   Signature:  {result.get('receipt_signature')[:64]}...")
-
-                return True
-
+                return {
+                    "is_safe": True,
+                    "status_code": response.getcode(),
+                    "data": json.loads(response.read().decode('utf-8'))
+                }
         except urllib.error.HTTPError as e:
-            # Our Go API returns 403 Forbidden for UNSAFE
-            if e.code == 403:
-                result = json.loads(e.read().decode('utf-8'))
-                print(f"❌ FormalJudge Blocked Action!")
-                print(f"Reason: {result.get('message')}")
-                print(f"Failed Invariant: {result.get('failed_invariant', 'Unknown')}")
-                return False
-            else:
-                print(f"⚠️ FormalJudge System Error: {e.code}")
-                raise e
+            error_payload = {}
+            try:
+                error_payload = json.loads(e.read().decode('utf-8'))
+            except Exception:
+                error_payload = {"message": str(e)}
+
+            return {
+                "is_safe": False,
+                "status_code": e.code,
+                "error": error_payload
+            }
+
