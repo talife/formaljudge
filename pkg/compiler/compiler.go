@@ -146,6 +146,12 @@ to prevent the browser from stripping escaped backslashes. Do not include any co
 		return "", fmt.Errorf("failed to parse json output: %w\nOutput was: %s", err, respText)
 	}
 
+	// --- DEFENSIVE RHS SANITIZATION ---
+	// Clean up accidental LLM syntax wrappers before template injection
+	data.InitialStateValue = sanitizeRHS(data.InitialStateValue)
+	data.ConcreteTrace = sanitizeRHS(data.ConcreteTrace)
+	// ----------------------------------
+
 	// Render the Dafny file via Go Templates
 	tmpl, err := template.New("dafny").Parse(DefaultDafnyTemplate)
 	if err != nil {
@@ -163,4 +169,16 @@ to prevent the browser from stripping escaped backslashes. Do not include any co
 	}
 
 	return outputPath, nil
+}
+
+// sanitizeRHS strips accidental variable declarations from LLM outputs
+func sanitizeRHS(val string) string {
+	val = strings.TrimSpace(val)
+	// Remove common LLM prefixes if it ignored prompt instructions
+	if idx := strings.Index(val, ":="); idx != -1 {
+		val = strings.TrimSpace(val[idx+2:])
+	}
+	val = strings.TrimPrefix(val, "const ")
+	val = strings.TrimPrefix(val, "var ")
+	return strings.TrimSuffix(val, ";")
 }
