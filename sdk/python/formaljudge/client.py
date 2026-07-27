@@ -57,3 +57,21 @@ class FormalJudgeClient:
                 "status_code": e.code,
                 "error": error_payload
             }
+
+class FormalJudgeResponse:
+    def __init__(self, is_safe: bool, status_code: int, data: dict, error: dict = None):
+        self.is_safe = is_safe
+        self.status_code = status_code
+        self.data = data or {}
+        self.error = error or {}
+
+    @property
+    def remediation_prompt(self) -> str:
+        """Returns a pre-formatted prompt string for the LLM context window upon UNSAFE verdicts."""
+        if self.is_safe:
+            return ""
+
+        correction = self.error.get("self_correction", {})
+        if correction:
+            return correction.get("suggested_prompt", self.error.get("message", "Execution blocked by guardrail."))
+        return self.error.get("message", "Execution blocked by guardrail.")

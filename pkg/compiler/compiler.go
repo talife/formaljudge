@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -88,14 +89,15 @@ func (c *Compiler) Compile(ctx context.Context, spec string, trace *models.Trace
 	var respText string
 	var err error
 
-	if mockResponse != "" {
+	switch {
+	case mockResponse != "":
 		respText = mockResponse
-	} else if c.llm == nil {
+	case c.llm == nil:
 		fmt.Println("\n================== PROMPT FOR LLM ==================")
 		fmt.Println(prompt)
 		fmt.Println("====================================================")
-		return "", fmt.Errorf("PROMPT_PRINTED")
-	} else {
+		return "", errors.New("PROMPT_PRINTED")
+	default:
 		respText, err = c.llm.Generate(ctx, prompt)
 		if err != nil {
 			return "", fmt.Errorf("llm generation failed: %w", err)

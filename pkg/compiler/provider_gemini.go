@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +19,7 @@ type geminiProvider struct {
 
 func NewGeminiProvider(apiKey, model string, timeout time.Duration) (LLMProvider, error) {
 	if apiKey == "" {
-		return nil, fmt.Errorf("LLM_API_KEY is required for the Gemini provider")
+		return nil, errors.New("LLM_API_KEY is required for the Gemini provider")
 	}
 	if model == "" {
 		model = "gemini-3.6-flash"
@@ -33,11 +34,11 @@ func NewGeminiProvider(apiKey, model string, timeout time.Duration) (LLMProvider
 func (g *geminiProvider) Generate(ctx context.Context, prompt string) (string, error) {
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, g.apiKey)
 
-	payload := map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{"parts": []map[string]interface{}{{"text": prompt}}},
+	payload := map[string]any{
+		"contents": []map[string]any{
+			{"parts": []map[string]any{{"text": prompt}}},
 		},
-		"generationConfig": map[string]interface{}{
+		"generationConfig": map[string]any{
 			"responseMimeType": "application/json",
 			"temperature":      0.0,
 		},
@@ -80,7 +81,7 @@ func (g *geminiProvider) Generate(ctx context.Context, prompt string) (string, e
 	}
 
 	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
-		return "", fmt.Errorf("gemini returned an empty response")
+		return "", errors.New("gemini returned an empty response")
 	}
 
 	return result.Candidates[0].Content.Parts[0].Text, nil

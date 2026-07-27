@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,5 +99,5 @@ func loadConfigFile() (*ConfigFile, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no valid config file found in search paths")
+	return nil, errors.New("no valid config file found in search paths")
 }

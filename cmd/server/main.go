@@ -20,10 +20,11 @@ import (
 )
 
 var (
-	serverPubKey   ed25519.PublicKey
-	serverPrivKey  ed25519.PrivateKey
-	policyRegistry = make(map[string]string)
-	globalCompiler *compiler.Compiler // <-- Global compiler instance
+	serverPubKey            ed25519.PublicKey
+	serverPrivKey           ed25519.PrivateKey
+	policyRegistry          = make(map[string]string)
+	globalCompiler          *compiler.Compiler
+	globalRemediationEngine *compiler.RemediationEngine
 )
 
 type PolicyRequest struct {
@@ -54,13 +55,13 @@ func main() {
 	cfg := compiler.LoadConfig()
 	provider, err := compiler.NewProvider(cfg)
 	if err != nil {
-		log.Printf("⚠️ Warning: LLM provider initialization failed: %v (Mock/AOT paths will still work)", err)
+		log.Printf("  Warning: LLM provider initialization failed: %v (Mock/AOT paths will still work)", err)
 	}
 
 	globalCompiler = compiler.New(provider)
+	globalRemediationEngine = compiler.NewRemediationEngine(provider) // <-- ADD THIS LINE
 
-	log.Printf("🤖 FormalJudge Engine Initialized | Provider: [%s] | Model: [%s]",
-		strings.ToUpper(cfg.Provider), cfg.Model)
+	log.Printf("  FormalJudge Engine Initialized | Provider: [%s] | Model: [%s]", strings.ToUpper(cfg.Provider), cfg.Model)
 
 	// 2. Setup HTTP routes
 	http.HandleFunc("/v1/verify", verifyHandler)
@@ -160,6 +161,12 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch verdict.Status {
 	case models.VerdictUnsafe:
+		verdict.SelfCorrection = globalRemediationEngine.Generate(
+			r.Context(),
+			req.Spec,
+			req.Trace,
+			verdict,
+		)
 		w.WriteHeader(http.StatusForbidden)
 	case models.VerdictError:
 		w.WriteHeader(http.StatusInternalServerError)

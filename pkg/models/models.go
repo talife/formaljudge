@@ -27,13 +27,21 @@ const (
 	VerdictError  VerdictType = "ERROR"
 )
 
-// Verdict contains the final assessment of the verification pipeline.
+// SelfCorrection provides structured remediation instructions for autonomous LLM self-healing.
+type SelfCorrection struct {
+	ConstraintViolated string `json:"constraint_violated"`
+	Explanation        string `json:"explanation"`
+	RequiredFix        string `json:"required_fix"`
+	SuggestedPrompt    string `json:"suggested_prompt"`
+}
+
 type Verdict struct {
-	Status             VerdictType `json:"status"`
-	Message            string      `json:"message"`
-	FailedInvariant    string      `json:"failed_invariant,omitempty"`
-	DafnyOutput        string      `json:"dafny_output,omitempty"`
-	GeneratedDafnyFile string      `json:"generated_dafny_file,omitempty"`
-	ReceiptSignature   string      `json:"receipt_signature,omitempty"`
-	ReceiptPublicKey   string      `json:"receipt_public_key,omitempty"`
+	Status             VerdictType     `json:"status"`
+	Message            string          `json:"message"`
+	FailedInvariant    string          `json:"failed_invariant,omitempty"`
+	DafnyOutput        string          `json:"dafny_output,omitempty"`
+	GeneratedDafnyFile string          `json:"generated_dafny_file,omitempty"`
+	ReceiptSignature   string          `json:"receipt_signature,omitempty"`
+	ReceiptPublicKey   string          `json:"receipt_public_key,omitempty"`
+	SelfCorrection     *SelfCorrection `json:"self_correction,omitempty"` // <-- NEW
 }

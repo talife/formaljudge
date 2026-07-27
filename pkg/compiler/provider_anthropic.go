@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +19,7 @@ type anthropicProvider struct {
 
 func NewAnthropicProvider(apiKey, model string, timeout time.Duration) (LLMProvider, error) {
 	if apiKey == "" {
-		return nil, fmt.Errorf("LLM_API_KEY is required for the Anthropic provider")
+		return nil, errors.New("LLM_API_KEY is required for the Anthropic provider")
 	}
 	if model == "" {
 		model = "claude-sonnet-5"
@@ -33,7 +34,7 @@ func NewAnthropicProvider(apiKey, model string, timeout time.Duration) (LLMProvi
 func (a *anthropicProvider) Generate(ctx context.Context, prompt string) (string, error) {
 	url := "https://api.anthropic.com/v1/messages"
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"model":       a.model,
 		"max_tokens":  4096,
 		"system":      "You are a formal methods compiler. You output ONLY valid, raw JSON without markdown formatting or code blocks.",
@@ -76,7 +77,7 @@ func (a *anthropicProvider) Generate(ctx context.Context, prompt string) (string
 	}
 
 	if len(result.Content) == 0 {
-		return "", fmt.Errorf("anthropic returned an empty response")
+		return "", errors.New("anthropic returned an empty response")
 	}
 
 	return result.Content[0].Text, nil

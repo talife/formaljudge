@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,9 +34,9 @@ func NewOpenAIProvider(apiKey, model, baseURL string, timeout time.Duration) (LL
 }
 
 func (o *openAIProvider) Generate(ctx context.Context, prompt string) (string, error) {
-	url := fmt.Sprintf("%s/chat/completions", o.baseURL)
+	url := o.baseURL + "/chat/completions"
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"model": o.model,
 		"messages": []map[string]string{
 			{"role": "system", "content": "You are a formal methods compiler. You output ONLY valid, raw JSON without markdown formatting or code blocks."},
@@ -59,7 +60,7 @@ func (o *openAIProvider) Generate(ctx context.Context, prompt string) (string, e
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if o.apiKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.apiKey))
+		req.Header.Set("Authorization", "Bearer "+o.apiKey)
 	}
 
 	resp, err := o.client.Do(req)
@@ -86,7 +87,7 @@ func (o *openAIProvider) Generate(ctx context.Context, prompt string) (string, e
 	}
 
 	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("llm returned an empty choice list")
+		return "", errors.New("llm returned an empty choice list")
 	}
 
 	return result.Choices[0].Message.Content, nil

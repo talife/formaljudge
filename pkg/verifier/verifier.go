@@ -86,8 +86,7 @@ func (v *DafnyVerifier) AnalyzeOutput(stdoutStr, stderrStr string) *models.Verdi
 	verdict.Message = "Safety invariant violation detected. The agent trace is unsafe."
 
 	// Try to extract failed invariant info
-	lines := strings.Split(combinedOutput, "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(combinedOutput, "\n") {
 		// Updated to support Dafny 4.2+ error messages
 		if strings.Contains(line, "assertion violation") || strings.Contains(line, "Could not prove") || strings.Contains(line, "assertion might not hold") || strings.Contains(line, "could not be proved") {
 			verdict.FailedInvariant = strings.TrimSpace(line)

@@ -12,6 +12,12 @@ linters:
     - misspell
     - staticcheck
     - whitespace
+
+    - gocritic
+    - perfsprint
+    - prealloc
+    - modernize
+    - unconvert
   exclusions:
     generated: lax
     presets:
