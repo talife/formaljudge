@@ -79,13 +79,16 @@ func loadConfigFile() (*ConfigFile, error) {
 	}
 
 	for _, path := range searchPaths {
-		data, err := os.ReadFile(path)
+		cleanPath := filepath.Clean(path)
+
+		//nolint:gosec // G703: searchPaths are predefined, trusted configuration locations.
+		data, err := os.ReadFile(cleanPath)
 		if err != nil {
 			continue // File not found, try next
 		}
 
 		var cfg ConfigFile
-		if strings.HasSuffix(path, ".json") {
+		if strings.HasSuffix(cleanPath, ".json") {
 			if err := json.Unmarshal(data, &cfg); err == nil {
 				return &cfg, nil
 			}
