@@ -1,0 +1,22 @@
+default_provider: "gemini"
+
+providers:
+  gemini:
+    default_model: "gemini-3.6-flash"
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+
+  anthropic:
+    default_model: "claude-sonnet-5"
+    base_url: "https://api.anthropic.com/v1"
+
+  openai:
+    default_model: "gpt-5.6-sol"
+    base_url: "https://api.openai.com/v1"
+
+  ollama:
+    default_model: "deepseek-r1"
+    base_url: "http://localhost:11434/v1"
+
+  vllm:
+    default_model: "qwen2.5-coder-32b"
+    base_url: "http://internal-gpu-cluster:8000/v1"

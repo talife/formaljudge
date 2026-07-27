@@ -14,22 +14,21 @@ import (
 func TestEndToEndVerification(t *testing.T) {
 	// 1. Setup mock LLM response for a safe trace
 	safeLLMJSON := `{
-		"state_definition": "datatype State = State(balance: int)",
-		"actions_definition": "datatype Action = Transfer",
-		"transition_definition": "function next(s: State, a: Action): State { s }",
-		"safety_invariant": "predicate SafetyInvariant(s: State) { s.balance >= 0 }",
-		"concrete_trace": "[]",
-		"initial_state_value": "State(100)"
-	}`
+  "state_definition": "datatype State = State(balance: int)",
+  "actions_definition": "datatype Action = Transfer",
+  "transition_definition": "function next(s: State, a: Action): State { s }",
+  "safety_invariant": "predicate SafetyInvariant(s: State) { s.balance >= 0 }",
+  "concrete_trace": "[]",
+  "initial_state_value": "State(100)"
+}`
 
 	dfyFile := "e2e_test.dfy"
 	defer os.Remove(dfyFile)
 
-	// 2. Compile
-	comp := compiler.NewDafnyCompiler("")
+	// 2. Compile using the refactored compiler (nil provider is fine when passing mock JSON)
+	comp := compiler.New(nil)
 	trace := &models.Trace{AgentID: "test"}
 
-	// Pass the safeLLMJSON string directly!
 	_, err := comp.Compile(context.Background(), "Spec", trace, dfyFile, safeLLMJSON)
 	if err != nil {
 		t.Fatalf("Compiler failed: %v", err)
@@ -38,7 +37,6 @@ func TestEndToEndVerification(t *testing.T) {
 	// 3. Verify (Requires actual Dafny binary in PATH)
 	vf := verifier.NewDafnyVerifier("dafny")
 	verdict, err := vf.Verify(context.Background(), dfyFile)
-
 	if err != nil {
 		t.Fatalf("Verifier execution failed: %v", err)
 	}

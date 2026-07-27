@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/talife/formaljudge/pkg/compiler"
 	"github.com/talife/formaljudge/pkg/models"
@@ -24,7 +25,6 @@ func main() {
 	dafnyBin := flag.String("dafny", "dafny", "Path to the Dafny executable")
 	jsonOutput := flag.Bool("json", false, "Output results in JSON format")
 	llmResponse := flag.String("llm-response", "", "Path to a JSON file containing the LLM's response (bypasses API)")
-
 	flag.Parse()
 
 	if *tracePath == "" || *specPath == "" {
@@ -50,23 +50,35 @@ func main() {
 		fail(fmt.Sprintf("Failed to read safety specification file: %v", err), *jsonOutput)
 	}
 
-	// 3. Compile NL Spec and Trace into Dafny code
-	fmt.Println("[*] Compiling specification and abstracting trace...")
-	comp := compiler.NewDafnyCompiler(os.Getenv("GEMINI_API_KEY"))
+	// 3. Initialize Model-Agnostic Compiler
+	cfg := compiler.LoadConfig()
+	provider, err := compiler.NewProvider(cfg)
+	if err != nil && *llmResponse == "" {
+		// Only warn if we aren't using a mock response file
+		if !*jsonOutput {
+			fmt.Printf("[!] Provider Warning: %v (Prompt-only mode active)\n", err)
+		}
+	}
 
-	// NEW BLOCK: Check if the user passed a mock file path, and read its contents
+	comp := compiler.New(provider)
+
+	if !*jsonOutput {
+		fmt.Printf("[*] Compiling specification using Provider: [%s] | Model: [%s]...\n",
+			strings.ToUpper(cfg.Provider), cfg.Model)
+	}
+
+	// 4. Check if a mock response file was passed
 	var mockResp string
 	if *llmResponse != "" {
 		data, err := os.ReadFile(*llmResponse)
 		if err != nil {
 			fail(fmt.Sprintf("Failed to read LLM response file: %v", err), *jsonOutput)
 		}
-		mockResp = string(data) // Convert the file bytes into a raw JSON string
+		mockResp = string(data)
 	}
 
-	// Update the Compile call to use 'mockResp' (the file contents) instead of '*llmResponse' (the file path)
+	// 5. Compile NL Spec and Trace into Dafny code
 	dfyFile, err := comp.Compile(context.Background(), string(specData), &trace, *outputPath, mockResp)
-
 	if err != nil {
 		if err.Error() == "PROMPT_PRINTED" {
 			fmt.Println("\n[!] Please copy the prompt above, provide it to your LLM, save the JSON response to a file (e.g., llm_out.json), and rerun with '-llm-response llm_out.json'")
@@ -74,17 +86,23 @@ func main() {
 		}
 		fail(fmt.Sprintf("Failed to compile Dafny specification: %v", err), *jsonOutput)
 	}
-	fmt.Printf("[+] Dafny specification file generated at: %s\n", dfyFile)
 
-	// 4. Run the Dafny Verifier
-	fmt.Println("[*] Executing formal verification with Dafny...")
+	if !*jsonOutput {
+		fmt.Printf("[+] Dafny specification file generated at: %s\n", dfyFile)
+	}
+
+	// 6. Run the Dafny Verifier
+	if !*jsonOutput {
+		fmt.Println("[*] Executing formal verification with Dafny...")
+	}
+
 	vf := verifier.NewDafnyVerifier(*dafnyBin)
 	verdict, err := vf.Verify(context.Background(), dfyFile)
 	if err != nil {
 		fail(fmt.Sprintf("Verification runner error: %v", err), *jsonOutput)
 	}
 
-	// 5. Output results
+	// 7. Output results
 	if *jsonOutput {
 		jsonBytes, _ := json.MarshalIndent(verdict, "", "  ")
 		fmt.Println(string(jsonBytes))
@@ -104,6 +122,7 @@ func main() {
 		}
 		fmt.Println("=================================================")
 	}
+
 	switch verdict.Status {
 	case models.VerdictUnsafe:
 		os.Exit(2)

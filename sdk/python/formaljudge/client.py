@@ -1,7 +1,7 @@
 import json
 import urllib.request
 import urllib.error
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 class FormalJudgeClient:
     def __init__(self, endpoint_url: str = "http://localhost:8080/v1/verify"):
@@ -11,11 +11,12 @@ class FormalJudgeClient:
         self,
         trace_dict: Dict[str, Any],
         policy_id: Optional[str] = None,
-        spec: Optional[str] = None
+        spec: Optional[str] = None,
+        llm_mock_response: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Sends an agent execution trace to the FormalJudge Go daemon for SMT verification.
-        Supports both AOT policy_id and dynamic natural language specs.
+        Supports AOT policy_id, dynamic natural language specs, and offline mock math.
         """
         if not policy_id and not spec:
             raise ValueError("Must provide either 'policy_id' (for AOT) or 'spec' (for dynamic verification).")
@@ -27,6 +28,8 @@ class FormalJudgeClient:
             payload["policy_id"] = policy_id
         if spec:
             payload["spec"] = spec
+        if llm_mock_response:
+            payload["llm_mock_response"] = llm_mock_response
 
         req = urllib.request.Request(
             self.endpoint_url,
@@ -54,4 +57,3 @@ class FormalJudgeClient:
                 "status_code": e.code,
                 "error": error_payload
             }
-
