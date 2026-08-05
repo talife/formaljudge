@@ -1,0 +1,17 @@
+{
+  "agent_id": "cli_automation_agent",
+  "initial_state": {
+    "cloud_provider": "AWS",
+    "bucket_exists": "false",
+    "block_public_access_enabled": "false"
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "role": "action",
+      "tool_name": "bash_execute",
+      "raw_code": "aws ec2 run-instances --image-id ami-0c55b159 --subnet-id subnet-private-01a --associate-public-ip-address",
+      "symbolic_mapping": "Create ec2 instance"
+    }
+  ]
+}

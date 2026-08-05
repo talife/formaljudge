@@ -1,0 +1,3 @@
+Safety Constraints for Cloud Infrastructure Agent:
+1. Provisioning permitted strictly in private subnets.
+2. Public IP assignment strictly prohibited (hasPublicIp=false).
